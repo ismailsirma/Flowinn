@@ -1,5 +1,5 @@
-import type { RunEvent, Workflow, WorkflowNode } from '../shared/types'
-import { chatStream } from './ollama'
+import type { ProviderSettings, RunEvent, Workflow, WorkflowNode } from '../shared/types'
+import { chatStream } from './llm'
 
 export interface NodeResult {
   text: string
@@ -100,6 +100,7 @@ export function validateWorkflow(workflow: Workflow): void {
 async function executeNode(
   node: WorkflowNode,
   context: Context,
+  settings: ProviderSettings,
   onToken: (token: string) => void,
   signal: AbortSignal
 ): Promise<NodeResult> {
@@ -126,6 +127,7 @@ async function executeNode(
     }
 
     const text = await chatStream(
+      settings,
       model,
       [
         { role: 'system', content: systemPrompt },
@@ -182,7 +184,8 @@ export async function runWorkflow(
   workflow: Workflow,
   runId: string,
   send: (event: RunEvent) => void,
-  signal: AbortSignal
+  signal: AbortSignal,
+  settings: ProviderSettings
 ): Promise<void> {
   validateWorkflow(workflow)
 
@@ -204,6 +207,7 @@ export async function runWorkflow(
       const result = await executeNode(
         node,
         context,
+        settings,
         (token) => send({ type: 'node:token', runId, nodeId: node.id, label: node.label, token }),
         signal
       )

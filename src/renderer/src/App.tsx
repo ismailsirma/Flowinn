@@ -3,8 +3,10 @@ import { Canvas } from './components/Canvas'
 import { Inspector } from './components/Inspector'
 import { LogPanel } from './components/LogPanel'
 import { Palette } from './components/Palette'
+import { ProviderBar } from './components/ProviderBar'
 import { Toolbar } from './components/Toolbar'
 import { useWorkflowStore } from './store/workflow'
+import type { ProviderSettings } from '@shared/types'
 
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error)
@@ -16,24 +18,43 @@ export default function App() {
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
 
+  const [settings, setSettings] = useState<ProviderSettings>({
+    kind: 'ollama',
+    host: 'localhost',
+    port: 11434
+  })
+  const [settingsSaving, setSettingsSaving] = useState(false)
+  const [providerMessage, setProviderMessage] = useState('')
+  const [providerError, setProviderError] = useState('')
+
   const load = useWorkflowStore((state) => state.load)
   const reset = useWorkflowStore((state) => state.reset)
   const toWorkflow = useWorkflowStore((state) => state.toWorkflow)
   const applyEvent = useWorkflowStore((state) => state.applyEvent)
+
+  const refreshModels = useCallback(async () => {
+    try {
+      setModels(await window.myflow.llm.models())
+    } catch {
+      setModels([])
+    }
+  }, [])
 
   useEffect(() => {
     if (!window.myflow) return
 
     let cancelled = false
 
-    window.myflow.ollama
-      .models()
-      .then((list) => {
-        if (!cancelled) setModels(list)
+    window.myflow.settings
+      .get()
+      .then((value) => {
+        if (!cancelled) setSettings(value)
       })
       .catch(() => {
         if (!cancelled) setModels([])
       })
+
+    void refreshModels()
 
     const unsubscribe = window.myflow.run.onEvent((event) => {
       applyEvent(event)
@@ -56,7 +77,29 @@ export default function App() {
       cancelled = true
       unsubscribe()
     }
-  }, [applyEvent, load])
+  }, [applyEvent, load, refreshModels])
+
+  const handleSettingsChange = useCallback((patch: Partial<ProviderSettings>) => {
+    setSettings((current) => ({ ...current, ...patch }))
+    setProviderMessage('')
+    setProviderError('')
+  }, [])
+
+  const handleSettingsSave = useCallback(async () => {
+    setSettingsSaving(true)
+    setProviderMessage('')
+    setProviderError('')
+    try {
+      const saved = await window.myflow.settings.save(settings)
+      setSettings(saved)
+      setProviderMessage('Provider applied')
+      await refreshModels()
+    } catch (error) {
+      setProviderError(errorMessage(error))
+    } finally {
+      setSettingsSaving(false)
+    }
+  }, [settings, refreshModels])
 
   const handleSave = useCallback(async () => {
     setSaving(true)
@@ -107,6 +150,15 @@ export default function App() {
         saving={saving}
         message={message}
         error={error}
+      />
+
+      <ProviderBar
+        settings={settings}
+        onChange={handleSettingsChange}
+        onSave={handleSettingsSave}
+        saving={settingsSaving}
+        message={providerMessage}
+        error={providerError}
       />
 
       <div className="flex min-h-0 flex-1">

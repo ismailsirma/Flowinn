@@ -11,7 +11,7 @@ MVP scope:
 - Node editor with palette, inspector, and canvas (React Flow).
 - Save/load workflows as JSON in Electron's `userData` directory.
 - Sequential DAG execution with cycle and connectivity validation.
-- Ollama as the first LLM provider; additional providers are planned behind the same interface.
+- Local LLM providers via a configurable host and port: Ollama or any OpenAI-compatible server.
 - Streaming tokens and per-node run logs.
 
 ## Stack
@@ -42,7 +42,7 @@ npm run package    # Build a Windows NSIS installer
 
 ```
 src/
-  main/        Electron main process: IPC, workflow storage, execution engine, Ollama client
+  main/        Electron main process: IPC, workflow storage, execution engine, LLM client
   preload/     contextBridge API exposed as window.myflow
   renderer/    React app (index.html + src/)
   shared/      Types shared by all processes (types.ts, api.ts)
@@ -51,7 +51,8 @@ src/
 Key files:
 
 - `src/main/engine.ts` — validation, topological sort, templating, node execution.
-- `src/main/ollama.ts` — Ollama model listing and streaming chat.
+- `src/main/llm.ts` — provider model listing and streaming chat (Ollama and OpenAI-compatible).
+- `src/main/settings.ts` — provider host/port persistence under `app.getPath('userData')/settings.json`.
 - `src/main/store.ts` — JSON persistence under `app.getPath('userData')/workflows`.
 - `src/main/ipc.ts` — IPC handlers and run cancellation.
 - `src/preload/index.ts` — typed renderer API surface.
@@ -69,7 +70,8 @@ Key files:
 
 ## Runtime notes
 
-- Ollama defaults to `http://localhost:11434`; override with the `OLLAMA_URL` environment variable.
+- Provider defaults are Ollama at `localhost:11434`; configure host and port in the app's Provider bar (persisted in `settings.json`).
+- `ollama` uses `/api/tags` and `/api/chat`; `openai` uses `/v1/models` and `/v1/chat/completions` (streaming SSE).
 - A workflow must contain exactly one trigger node and be fully reachable from it.
 - The run `Stop` button aborts the active run through an `AbortController`.
 
@@ -78,4 +80,4 @@ Key files:
 1. `npm run typecheck`
 2. `npm test`
 3. `npm run build`
-4. Manual smoke test: start Ollama, run the default trigger → agent → end workflow, confirm streamed tokens and logs.
+4. Manual smoke test: start the configured provider, run the default trigger → agent → end workflow, confirm streamed tokens and logs.

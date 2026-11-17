@@ -15,6 +15,7 @@ export function Inspector({ models }: InspectorProps) {
   )
   const updateConfig = useWorkflowStore((state) => state.updateConfig)
   const updateLabel = useWorkflowStore((state) => state.updateLabel)
+  const deleteNode = useWorkflowStore((state) => state.deleteNode)
 
   if (!node) {
     return (
@@ -194,6 +195,13 @@ export function Inspector({ models }: InspectorProps) {
             : 'The end node collects the outputs of all previous nodes.'}
         </p>
       )}
+
+      <button
+        onClick={() => deleteNode(node.id)}
+        className="mt-4 w-full rounded-md border border-rose-500/60 bg-rose-500/10 px-3 py-1.5 text-sm text-rose-300 hover:bg-rose-500/20"
+      >
+        Delete node
+      </button>
     </aside>
   )
 }

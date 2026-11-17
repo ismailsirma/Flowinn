@@ -20,8 +20,12 @@ const api: MyFlowApi = {
       }
     }
   },
-  ollama: {
-    models: () => ipcRenderer.invoke('ollama:models')
+  settings: {
+    get: () => ipcRenderer.invoke('settings:get'),
+    save: (settings) => ipcRenderer.invoke('settings:save', settings)
+  },
+  llm: {
+    models: () => ipcRenderer.invoke('llm:models')
   }
 }
 

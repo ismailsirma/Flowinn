@@ -19,6 +19,7 @@ export function Canvas() {
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
+        deleteKeyCode={['Backspace', 'Delete']}
         onNodeClick={(_, node) => select(node.id)}
         onPaneClick={() => select(null)}
         fitView
