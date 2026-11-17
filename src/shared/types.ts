@@ -1,5 +1,13 @@
 export type NodeKind = 'trigger' | 'agent' | 'tool' | 'end'
 
+export type ProviderKind = 'ollama' | 'openai'
+
+export interface ProviderSettings {
+  kind: ProviderKind
+  host: string
+  port: number
+}
+
 export interface NodeConfig {
   model?: string
   systemPrompt?: string

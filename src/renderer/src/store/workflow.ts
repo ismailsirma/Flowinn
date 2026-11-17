@@ -85,6 +85,7 @@ interface WorkflowState {
   onEdgesChange: (changes: EdgeChangeset<Edge>) => void
   onConnect: (connection: Connection) => void
   addNode: (kind: NodeKind) => void
+  deleteNode: (id: string) => void
   updateConfig: (id: string, patch: NodeConfig) => void
   updateLabel: (id: string, label: string) => void
   applyEvent: (event: RunEvent) => void
@@ -112,7 +113,10 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
   select: (id) => set({ selectedId: id }),
 
   onNodesChange: (changes) => {
-    set({ nodes: changes.applyTo(get().nodes) })
+    const nodes = changes.applyTo(get().nodes)
+    const ids = new Set(nodes.map((node) => node.id))
+    const edges = get().edges.filter((edge) => ids.has(edge.source) && ids.has(edge.target))
+    set({ nodes, edges })
   },
 
   onEdgesChange: (changes) => {
@@ -138,6 +142,14 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
       y: 100 + Math.floor(count / 4) * 160
     }, config)
     set({ nodes: [...get().nodes, node], selectedId: node.id })
+  },
+
+  deleteNode: (id) => {
+    set({
+      nodes: get().nodes.filter((node) => node.id !== id),
+      edges: get().edges.filter((edge) => edge.source !== id && edge.target !== id),
+      selectedId: get().selectedId === id ? null : get().selectedId
+    })
   },
 
   updateConfig: (id, patch) => {

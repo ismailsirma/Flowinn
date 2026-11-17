@@ -1,4 +1,4 @@
-import type { RunEvent, Workflow, WorkflowSummary } from './types'
+import type { ProviderSettings, RunEvent, Workflow, WorkflowSummary } from './types'
 
 export interface MyFlowApi {
   workflows: {
@@ -12,7 +12,11 @@ export interface MyFlowApi {
     stop: (runId: string) => Promise<void>
     onEvent: (callback: (event: RunEvent) => void) => () => void
   }
-  ollama: {
+  settings: {
+    get: () => Promise<ProviderSettings>
+    save: (settings: ProviderSettings) => Promise<ProviderSettings>
+  }
+  llm: {
     models: () => Promise<string[]>
   }
 }
